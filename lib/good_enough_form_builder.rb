@@ -3,20 +3,18 @@ module GoodEnoughFormBuilder
     @@templates_path = "forms/"
     cattr_accessor :templates_path
     
-    def wrapper(*args)
-      options = args.extract_options!
-      type = options[:type]
-      body = options[:body]
-      locals = template_locals(options)
+    def wrapper(locals)
+      type = locals[:type]
+      body = locals[:body]
       
       begin
-        @template.render :partial => partial_name(type), :locals => locals
+        @template.render :partial => template_name(type), :locals => locals
       rescue ActionView::MissingTemplate
         if type == 'field'
           body
         else
           begin
-            @template.render :partial => partial_name('field'), :locals => locals
+            @template.render :partial => template_name('field'), :locals => locals
           rescue ActionView::MissingTemplate
             body
           end
@@ -26,13 +24,13 @@ module GoodEnoughFormBuilder
     
     def field(*args, &block)
       options = args.extract_options!
-      options.merge!({
+      locals = template_locals(options)
+      locals.merge!({
         :method => nil,
         :type => 'field',
         :body => @template.capture(&block)
       })
-      args << options
-      wrapper(*args)
+      wrapper(locals)
     end
     
     ['text_field', 'file_field', 'password_field', 'text_area', 'select', 'submit'].each do |name|
@@ -40,30 +38,17 @@ module GoodEnoughFormBuilder
         options = args.extract_options!
         plain = options.delete(:plain)
         return super if plain
-                
-        options[:method] = method
-        options[:type] = name
-        options[:error] ||= @object.errors.on(method) if @object
-        options[:label] ||= false if name == 'submit'
-        options[:body] = super
-        args << options
-        wrapper(*args)
-        # full_options = options.dup
-        # locals = template_locals(options)
-        # locals[:body] = super
-        # 
-        # begin
-        #   @template.render :partial => partial_name(name), :locals => locals
-        # rescue ActionView::MissingTemplate
-        #   full_options[:body] = locals[:body]
-        #   args << full_options
-        #   wrapper(*args)
-        # end
-      end
-    end
         
-    def partial_name(name)
-      return "#{templates_path}#{name}"
+        locals = template_locals(options)
+        locals[:error] ||= @object.errors.on(method) if @object
+        locals[:label_text] ||= false if name == 'submit'
+        locals.merge!({
+          :method => method,
+          :type => name,
+          :body => super
+        })
+        wrapper(locals)
+      end
     end
         
     def fieldset(*args, &block)
@@ -85,18 +70,22 @@ module GoodEnoughFormBuilder
         body << separator unless separator.blank?
       end
       
-      options[:method] = method
-      options[:type] = 'radio_select'
-      options[:error] ||= @object.errors.on(method) if @object
-      options[:label_for] ||= false
-      full_options = options.dup
       locals = template_locals(options)
-      locals[:body] = body
-      
-      
+      locals[:error] ||= @object.errors.on(method) if @object
+      locals[:label_for] ||= false
+      locals.merge!({
+        :method => method,
+        :type => 'radio_select',
+        :body => body
+      })
+      wrapper(locals)
     end
     
     private
+    
+    def template_name(name)
+      return "#{templates_path}#{name}"
+    end
     
     def template_locals(options)
       {
