@@ -82,6 +82,21 @@ module GoodEnoughFormBuilder
       wrapper(locals)
     end
     
+    def check_box_field(method, text, *args)
+      options = args.extract_options!      
+      locals = template_locals(options)
+      locals[:error] ||= @object.errors.on(method) if @object
+      locals[:label_for] ||= false
+      
+      body = @template.content_tag("label" , "#{check_box(method)} #{text}", :for => "#{object_name}_#{method}") 
+      locals.merge!({
+        :method => method,
+        :type => 'check_box_field',
+        :body => body
+      })
+      wrapper(locals)
+    end
+    
     private
     
     def template_name(name)
