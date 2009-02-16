@@ -33,7 +33,8 @@ module GoodEnoughFormBuilder
       wrapper(locals)
     end
     
-    ['text_field', 'file_field', 'password_field', 'text_area', 'select', 'submit'].each do |name|
+    ['text_field', 'file_field', 'password_field', 'text_area', 
+      'select', 'collection_select', 'submit'].each do |name|
       define_method(name) do |method, *args|
         options = args.extract_options!
         plain = options.delete(:plain)
