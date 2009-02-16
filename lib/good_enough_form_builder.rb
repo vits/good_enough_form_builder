@@ -82,6 +82,31 @@ module GoodEnoughFormBuilder
       wrapper(locals)
     end
     
+    def check_box_group(name, choices, *args)
+      options = args.extract_options!
+      values = args.pop
+      values = [] if values.nil?
+      values = [values] unless values.is_a?(Array)
+      separator = options.delete(:separator)
+
+      body = ''
+      for text,key in choices
+        id = "#{name}_#{key}".gsub(/\]\[|[^-a-zA-Z0-9:.]/, "_").sub(/_$/, "")
+        input = @template.check_box_tag name, key, (values.include?(key)), :id => id
+        body << @template.content_tag("label" , "#{input} #{text}", :for => id) 
+        body << separator unless separator.blank?
+      end
+
+      locals = template_locals(options)
+      locals[:label_for] ||= false
+      locals.merge!({
+        :method => nil,
+        :type => 'check_box_group',
+        :body => body
+      })
+      wrapper(locals)
+    end
+    
     def check_box_field(method, text, *args)
       options = args.extract_options!      
       locals = template_locals(options)
