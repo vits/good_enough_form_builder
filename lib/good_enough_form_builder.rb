@@ -47,15 +47,17 @@ module GoodEnoughFormBuilder
       define_method(name) do |method, *args|
         options = args.extract_options!
         plain = options.delete(:plain)
-        return super if plain
-        
         locals = template_locals(options)
+        options[:class] = locals[:inner_class] || locals[:klass]
+        body = super
+        return body if plain
+        
         locals[:error] ||= @object.errors.on(method) if @object
         locals[:label_text] ||= false if name == 'submit'
         locals.merge!({
           :method => method,
           :type => name,
-          :body => super
+          :body => body
         })
         wrapper(locals)
       end
@@ -75,7 +77,7 @@ module GoodEnoughFormBuilder
       separator = options.delete(:separator)
       body = ''
       for text,key in choices
-        body << radio_button(method, key.to_s, :selected => (value == key)) + ' '
+        body << radio_button(method, key.to_s, :selected => (value == key), :class => options[:inner_class]) + ' '
         body << @template.content_tag("label" , text, :for => "#{object_name}_#{method}_#{key.to_s}")
         body << separator unless separator.blank?
       end
@@ -101,7 +103,7 @@ module GoodEnoughFormBuilder
       body = ''
       for text,key in choices
         id = "#{name}_#{key}".gsub(/\]\[|[^-a-zA-Z0-9:.]/, "_").sub(/_$/, "")
-        input = @template.check_box_tag name, key, (values.include?(key)), :id => id
+        input = @template.check_box_tag(name, key, (values.include?(key)), :id => id, :class => options[:inner_class])
         body << @template.content_tag("label" , "#{input} #{text}", :for => id) 
         body << separator unless separator.blank?
       end
@@ -122,7 +124,7 @@ module GoodEnoughFormBuilder
       locals[:error] ||= @object.errors.on(method) if @object
       locals[:label_for] ||= false
       
-      body = @template.content_tag("label" , "#{check_box(method)} #{text}", :for => "#{object_name}_#{method}") 
+      body = @template.content_tag("label" , "#{check_box(method, :class => locals[:inner_class])} #{text}", :for => "#{object_name}_#{method}") 
       locals.merge!({
         :method => method,
         :type => 'check_box_field',
@@ -135,7 +137,6 @@ module GoodEnoughFormBuilder
       options = args.extract_options!
       locals = template_locals(options)
       locals[:body] = @template.capture(&block)
-      # @template.content_tag(:div, , options)
       buttons_wrapper(locals)
     end
     
@@ -143,6 +144,7 @@ module GoodEnoughFormBuilder
       options = args.extract_options!
       plain = options.delete(:plain)
       locals = template_locals(options)
+      options[:class] = locals[:inner_class] || locals[:klass]
       
       if plain
         super
@@ -160,7 +162,7 @@ module GoodEnoughFormBuilder
       options.merge!({
         :type => 'button',
         :value => value,
-        :class => locals[:klass]
+        :class => locals[:inner_class] || locals[:klass]
       })
       body = @template.content_tag(:input, '', options)
       if plain
@@ -188,6 +190,7 @@ module GoodEnoughFormBuilder
         :error => options.delete(:error),
         :required => options.delete(:required),
         :klass => options.delete(:class),
+        :inner_class => options.delete(:inner_class),
         :label_text => options.delete(:label),
         :label_for => options.delete(:label_for),
         :note => options.delete(:note),
