@@ -22,6 +22,15 @@ module GoodEnoughFormBuilder
       end
     end
     
+    def buttons_wrapper(locals)
+      body = locals[:body]
+      begin
+        @template.render :partial => template_name('buttons'), :locals => locals
+      rescue ActionView::MissingTemplate
+        body
+      end      
+    end
+    
     def field(*args, &block)
       options = args.extract_options!
       locals = template_locals(options)
@@ -34,7 +43,7 @@ module GoodEnoughFormBuilder
     end
     
     ['text_field', 'file_field', 'password_field', 'text_area', 
-      'select', 'collection_select', 'submit'].each do |name|
+      'select', 'collection_select'].each do |name|
       define_method(name) do |method, *args|
         options = args.extract_options!
         plain = options.delete(:plain)
@@ -120,6 +129,46 @@ module GoodEnoughFormBuilder
         :body => body
       })
       wrapper(locals)
+    end
+    
+    def buttons(*args, &block)
+      options = args.extract_options!
+      locals = template_locals(options)
+      locals[:body] = @template.capture(&block)
+      # @template.content_tag(:div, , options)
+      buttons_wrapper(locals)
+    end
+    
+    def submit(method, *args)
+      options = args.extract_options!
+      plain = options.delete(:plain)
+      locals = template_locals(options)
+      
+      if plain
+        super
+      else
+        locals[:body] = super
+        buttons_wrapper(locals)
+      end
+    end
+    
+    def button(value, *args)
+      options = args.extract_options!
+      plain = options.delete(:plain)
+      locals = template_locals(options)
+      
+      options.merge!({
+        :type => 'button',
+        :value => value,
+        :class => locals[:klass]
+      })
+      body = @template.content_tag(:input, '', options)
+      if plain
+        body
+      else
+        locals[:body] = body
+        buttons_wrapper(locals)
+      end
     end
     
     private
