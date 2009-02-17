@@ -48,7 +48,8 @@ module GoodEnoughFormBuilder
         options = args.extract_options!
         plain = options.delete(:plain)
         locals = template_locals(options)
-        options[:class] = locals[:inner_class] || locals[:klass]
+        options[:class] = locals[:inner_class]
+        options[:class] ||= locals[:klass] if plain
         body = super
         return body if plain
         
@@ -144,9 +145,10 @@ module GoodEnoughFormBuilder
       options = args.extract_options!
       plain = options.delete(:plain)
       locals = template_locals(options)
-      options[:class] = locals[:inner_class] || locals[:klass]
+      options[:class] = locals[:inner_class]
       
       if plain
+        options[:class] ||= locals[:klass]
         super
       else
         locals[:body] = super
@@ -162,8 +164,9 @@ module GoodEnoughFormBuilder
       options.merge!({
         :type => 'button',
         :value => value,
-        :class => locals[:inner_class] || locals[:klass]
+        :class => locals[:inner_class]
       })
+      options[:class] ||= locals[:klass] if plain
       body = @template.content_tag(:input, '', options)
       if plain
         body
